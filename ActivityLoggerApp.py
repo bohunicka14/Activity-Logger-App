@@ -1,6 +1,8 @@
 from tkinter import *
-from mongoengine import *
-from Activity import *
+import datetime
+import csv
+#from mongoengine import *
+#from Activity import *
 
 class ActivityLoggerApp(Tk):
     def __init__(self):
@@ -47,7 +49,7 @@ class ActivityLoggerApp(Tk):
         self.timer()
 
     def finish(self):
-        pass
+        self.save_data_to_csv()
 
     def generate_stats(self):
         pass
@@ -56,17 +58,28 @@ class ActivityLoggerApp(Tk):
         if self.activity_is_stopped:
             self.activity_is_stopped = False
             self.start_stop_button.config(text='STOP')
+            self.start = datetime.datetime.now()
 
         else:
             self.start_stop_button.config(text='START')
             self.activity_is_stopped = True
+            self.stop = datetime.datetime.now()
+            self.db.append([self.start, self.stop])
+
+    def save_data_to_csv(self):
+        with open(self.activity_name + '.csv', 'w', newline='') as dbfile:
+            dbwriter = csv.writer(dbfile, delimiter=';')
+            dbwriter.writerow(self.fields1)
+            formated_result = self.format_seconds(self.duration)
+            dbwriter.writerow([self.activity_name, '{} h {} m {} s'.format(formated_result.get('h'),
+                                                                           formated_result.get('m'),
+                                                                           formated_result.get('s'))])
+            dbwriter.writerow(self.fields2)
+            for entry in self.db:
+                dbwriter.writerow(entry)
 
     def add_activity(self):
         self.activity_name = self.content.get()
-        activity = Activity(name = self.activity_name)
-        activity.save()
-        for i in Activity.objects:
-            print(i.name)
 
     def timer(self):
         if not self.activity_is_stopped:
@@ -86,6 +99,6 @@ class ActivityLoggerApp(Tk):
 
 
 if __name__ == '__main__':
-    connect('ActivityLoggerAppDB', host='mongodb://localhost/ActivityLoggerAppDB', port=27017)
+    #connect('ActivityLoggerAppDB', host='mongodb://localhost/ActivityLoggerAppDB', port=27017)
     app = ActivityLoggerApp()
     app.mainloop()
